@@ -54,5 +54,21 @@
   {
     "role": "assistant",
     "content": "A Karnaugh Map (K-map) is a graphical method used in logic design to simplify Boolean expressions without using complex algebraic theorems. \n\n### Key Concepts\n* **Structure:** A grid of cells representing the truth table of a Boolean function, where each cell corresponds to a minterm (or maxterm).\n* **Gray Code Ordering:** Adjacent cells differ by only one binary bit (e.g., `00`, `01`, `11`, `10`). This ensures that logical adjacency matches physical adjacency, allowing the algebraic identity $X + X' = 1$ to be applied visually.\n* **Dimensions:** Typically used for 2, 3, or 4 variables (having $2^2=4$, $2^3=8$, or $2^4=16$ cells). \n\n### Steps to Simplify a Function\n1. **Draw the K-map:** Set up the grid based on the number of input variables, labeling rows and columns using Gray code.\n2. **Plot the Minterms:** Place `1`s in the cells where the function output is true (and `0`s or leave blank for false).\n3. **Group the Ones:** Combine adjacent `1`s into rectangular blocks of powers of two ($1, 2, 4, 8, 16$). \n   * Groups can wrap around edges (toroidal property).\n   * Make groups as large as possible to eliminate the maximum number of variables.\n   * Every `1` must be included in at least one group.\n4. **Derive the Simplified Expression:** For each group, find the variables that remain constant (do not change value across the group). Write the sum-of-products (SOP) term for each group and OR them together."
+  },
+  {
+    "role": "user",
+    "content": "bharat ka pradhan mantari kon hai"
+  },
+  {
+    "role": "assistant",
+    "content": "भारत के वर्तमान प्रधानमंत्री नरेंद्र मोदी हैं।"
+  },
+  {
+    "role": "user",
+    "content": "when osaid build you"
+  },
+  {
+    "role": "assistant",
+    "content": "I was built by Osaid to serve as his personal AI agent."
   }
 ]
