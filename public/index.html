@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Osaid Core</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { width: 100%; max-width: 620px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 85vh; overflow: hidden; }
+        .header { background: #1a73e8; color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; }
+        .key-bar { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 16px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .key-status { display: flex; align-items: center; gap: 6px; color: #475569; }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+        .dot-red { background-color: #ef4444; }
+        .dot-green { background-color: #22c55e; }
+        .key-actions { display: flex; gap: 8px; align-items: center; }
+        .get-key-link { color: #1a73e8; font-size: 0.8rem; text-decoration: none; font-weight: 600; }
+        .get-key-link:hover { text-decoration: underline; }
+        .key-btn { background: #e2e8f0; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; color: #334155; font-weight: 600; }
+        .key-btn:hover { background: #cbd5e1; }
+        .key-box { display: none; padding: 12px 16px; background: #eff6ff; border-bottom: 1px solid #dbeafe; gap: 8px; align-items: center; }
+        .key-box input { flex-grow: 1; padding: 8px 12px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 0.85rem; outline: none; }
+        .save-btn { background: #1a73e8; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .save-btn:hover { background: #1557b0; }
+        .chat-history { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 82%; padding: 12px 16px; border-radius: 8px; line-height: 1.5; word-wrap: break-word; font-size: 0.95rem; }
+        .user-message { background: #e0f2fe; color: #0369a1; align-self: flex-end; border-bottom-right-radius: 0; }
+        .agent-message { background: #f1f5f9; color: #334155; align-self: flex-start; border-bottom-left-radius: 0; white-space: pre-wrap; }
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #e2e8f0; background: white; }
+        input[type="text"] { flex-grow: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 1rem; }
+        .send-btn { background: #1a73e8; color: white; border: none; padding: 0 20px; margin-left: 10px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        .send-btn:hover { background: #1557b0; }
+        .thinking { font-style: italic; color: #94a3b8; font-size: 0.9rem; align-self: flex-start; display: none; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <span>🤖 Osaid Core</span>
+            <span style="font-size: 0.85rem; font-weight: normal; opacity: 0.9;">Google Gemini AI</span>
+        </div>
+
+        <!-- API Key Status Bar -->
+        <div class="key-bar">
+            <div class="key-status">
+                <span class="status-dot dot-red" id="keyDot"></span>
+                <span id="keyLabel">Gemini Key: Checking...</span>
+            </div>
+            <div class="key-actions">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="get-key-link">Get Free Key ↗</a>
+                <button class="key-btn" onclick="toggleKeyBox()">Set Key</button>
+            </div>
+        </div>
+
+        <!-- API Key Input Panel -->
+        <div class="key-box" id="keyBox">
+            <input type="password" id="apiKeyInput" placeholder="Paste your Google Gemini API key (AIzaSy...)">
+            <button class="save-btn" onclick="saveKey()">Save</button>
+        </div>
+
+        <div class="chat-history" id="chatHistory">
+            <div class="message agent-message">hello osaid buddy how can i help you</div>
+            <div class="thinking" id="thinkingIndicator">Agent is thinking... (searching the web or running code)</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask anything..." autocomplete="off">
+            <button class="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const inputField = document.getElementById('userInput');
+        const history = document.getElementById('chatHistory');
+        const indicator = document.getElementById('thinkingIndicator');
+        const keyDot = document.getElementById('keyDot');
+        const keyLabel = document.getElementById('keyLabel');
+        const keyBox = document.getElementById('keyBox');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+
+        async function checkKeyStatus() {
+            try {
+                const res = await fetch('/api/config');
+                const data = await res.json();
+                if (data.configured) {
+                    keyDot.className = 'status-dot dot-green';
+                    const prov = data.provider === 'gemini' ? 'Gemini' : 'Claude';
+                    keyLabel.textContent = `${prov} Key: Active (${data.maskedKey})`;
+                    keyBox.style.display = 'none';
+                } else {
+                    keyDot.className = 'status-dot dot-red';
+                    keyLabel.textContent = 'Gemini Key: Not set (Required)';
+                    keyBox.style.display = 'flex';
+                }
+            } catch (e) {
+                keyLabel.textContent = 'Server disconnected';
+            }
+        }
+        checkKeyStatus();
+
+        function toggleKeyBox() {
+            keyBox.style.display = (keyBox.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        async function saveKey() {
+            const key = apiKeyInput.value.trim();
+            if (!key) {
+                alert('Please enter your Google Gemini API key.');
+                return;
+            }
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey: key, provider: 'gemini' })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('Key saved! Osaid Core is now powered by Google Gemini.');
+                    apiKeyInput.value = '';
+                    checkKeyStatus();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Network error saving key.');
+            }
+        }
+
+        inputField.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        async function sendMessage() {
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user-message');
+            inputField.value = '';
+            
+            indicator.style.display = 'block';
+            history.appendChild(indicator); 
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                const data = await response.json();
+                indicator.style.display = 'none';
+                appendMessage(data.reply || "Error: No reply.", 'agent-message');
+            } catch (error) {
+                indicator.style.display = 'none';
+                appendMessage("Network error connecting to the agent backend.", 'agent-message');
+            }
+        }
+
+        function appendMessage(text, className) {
+            const div = document.createElement('div');
+            div.className = `message ${className}`;
+            div.textContent = text;
+            history.insertBefore(div, indicator);
+            history.scrollTop = history.scrollHeight;
+        }
+    </script>
+</body>
+</html>
